@@ -1,5 +1,4 @@
 """Functions for creating an optimal design."""
-from __future__ import division
 
 import dexpy.design
 import pandas as pd
@@ -54,7 +53,7 @@ def build_optimal(factor_count, **kwargs):
 
     :Keyword Arguments:
         * **order** (:class:`ModelOrder <dexpy.model.ModelOrder>`) -- \
-            Builds a design for this order model. \
+            Builds a design for this order model.\
             Mutually exclusive with the **model** parameter.
         * **model** (`patsy formula <https://patsy.readthedocs.io>`_) -- \
             Builds a design for this model formula. \
@@ -63,6 +62,8 @@ def build_optimal(factor_count, **kwargs):
             The number of runs to use in the design. This must be equal\
             to or greater than the rank of the model.
     """
+    ran_num = kwargs.get('random', None)
+    
     factor_names = dexpy.design.get_factor_names(factor_count)
 
     model = kwargs.get('model', None)
@@ -73,7 +74,7 @@ def build_optimal(factor_count, **kwargs):
     run_count = kwargs.get('run_count', 0)
 
     # first generate a valid starting design
-    (design, X) = bootstrap(factor_names, model, run_count)
+    (design, X) = bootstrap(factor_names, model, run_count, ran_num)
 
     functions = []
     for _, subterms in X.design_info.term_codings.items():
@@ -151,7 +152,7 @@ def build_optimal(factor_count, **kwargs):
 
     return design
 
-def bootstrap(factor_names, model, run_count):
+def bootstrap(factor_names, model, run_count, ran_num):
     """Create a minimal starting design that is non-singular."""
     md = ModelDesc.from_formula(model)
     model_size = len(md.rhs_termlist)
@@ -176,7 +177,7 @@ def bootstrap(factor_names, model, run_count):
         bounds[c] = 1
         c += 1
 
-    start_points = hit_and_run(x0, constraint_matrix, bounds, run_count)
+    start_points = hit_and_run(x0, constraint_matrix, bounds, run_count, ran_num)
 
     d = pd.DataFrame(start_points, columns=factor_names)
     X = dmatrix(model, d)
